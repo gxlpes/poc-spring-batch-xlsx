@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: mysecretpassword
+    driver-class-name: org.postgresql.Driver
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB # Adjust as needed
+      max-request-size: 50MB # Adjust as needed
+      file-size-threshold: 0
+    application:
+      temp-dir: "${java.io.tmpdir}"
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+      show-sql: true
+      properties:
+        hibernate:
+          format_sql: true
+      database: postgresql
+      database-platform: org.hibernate.dialect.PostgreSQLDialect
+  jackson:
+    default-property-inclusion: NON_NULL
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: always
+
+# Enable Logging mongo queries
+logging:
+  level:
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
+
+employee:
+  excel:
+    processingfolder: data/processing/
+    resultsfolder: data/results/

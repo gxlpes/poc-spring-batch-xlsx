@@ -1,0 +1,14 @@
+version: '3'
+services:
+  poc-batch-upload-db:
+    image: postgres:latest
+    container_name: poc-batch-upload-db
+    environment:
+      POSTGRES_PASSWORD: mysecretpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - poc-batch-upload-volume:/var/lib/postgresql/data
+
+volumes:
+  poc-batch-upload-volume:
