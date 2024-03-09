@@ -8,7 +8,6 @@ import jakarta.persistence.EntityManagerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParametersValidator;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.job.CompositeJobParametersValidator;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -19,13 +18,13 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JpaItemWriter;
-import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import javax.sql.DataSource;
 import java.util.Collections;
@@ -33,9 +32,17 @@ import java.util.Collections;
 @Configuration
 public class BatchConfiguration {
 
+    private final EntityManagerFactory emf;
+
     public BatchConfiguration(EntityManagerFactory emf) {
         this.emf = emf;
     }
+
+    @Bean
+    public ItemReader<Employee> itemReader() {
+        return new EmployeeItemReader();
+    }
+
 
     @Bean
     public JobParametersValidator jobParametersValidator() {
@@ -63,14 +70,6 @@ public class BatchConfiguration {
         return jobLauncher;
     }
 
-
-    @Bean
-    public ItemReader<Employee> itemReader() {
-        return new EmployeeItemReader();
-    }
-
-    private final EntityManagerFactory emf;
-
     @Bean(name = "itemWriter")
     public JpaItemWriter<Employee> writer(DataSource dataSource) {
         JpaItemWriter<Employee> writer = new JpaItemWriter<>();
@@ -78,37 +77,25 @@ public class BatchConfiguration {
         return writer;
     }
 
-    /**
-     * step declaration
-     *
-     * @return {@link Step}
-     */
     @Bean
-    public Step employeeStep(ItemWriter<Employee> itemWriter, JobRepository jobRepository, JpaTransactionManager transactionManager) {
-        return new StepBuilder("employeeStep", jobRepository)
-                .<Employee, Employee>chunk(50, transactionManager)
-                .reader(itemReader())
-                .processor(itemProcessor())
-                .writer(itemWriter)
+    public Step employeeStep(ItemWriter<Employee> itemWriter, JobRepository jobRepository, JpaTransactionManager transactionManager, TaskExecutor taskExecutor) {
+        return new StepBuilder("employeeStep", jobRepository).<Employee, Employee>chunk(50, transactionManager).reader(itemReader()).processor(itemProcessor()).writer(itemWriter).taskExecutor(taskExecutor) // Set the task executor
                 .build();
     }
 
-
-    /**
-     * job declaration
-     *
-     * @param listener {@link JobCompletionListener}
-     * @return {@link Job}
-     */
     @Bean
     public Job employeeJob(JobCompletionListener listener, Step employeeStep, JobRepository jobRepository) {
-        return new JobBuilder("employeeJob", jobRepository)
-                .incrementer(new RunIdIncrementer())
-                .listener(listener)
-                .flow(employeeStep)
-                .end()
-                .validator(compositeJobParametersValidator())
-                .build();
+        return new JobBuilder("employeeJob", jobRepository).incrementer(new RunIdIncrementer()).listener(listener).flow(employeeStep).end().validator(compositeJobParametersValidator()).build();
+    }
+
+    @Bean
+    public TaskExecutor taskExecutor() {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        taskExecutor.setCorePoolSize(10); // core pool size as desired
+        taskExecutor.setMaxPoolSize(20); // the maximum pool size as desired
+        taskExecutor.setQueueCapacity(30); // the queue capacity as desired
+        taskExecutor.afterPropertiesSet();
+        return taskExecutor;
     }
 
 }

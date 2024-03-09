@@ -32,7 +32,7 @@ public class EmployeeItemReader extends AbstractExcelPoi<Employee> implements It
                 List<Employee> employeeList = read(path, new EmployeeItemRowMapper());
                 employeeIterator = employeeList.iterator();
             } else {
-                return null; // No more data to read
+                return null;
             }
         }
 
@@ -53,7 +53,6 @@ public class EmployeeItemReader extends AbstractExcelPoi<Employee> implements It
         List<String> excelFilePaths = Arrays.asList(excelPaths.split(","));
         excelFilePathsIterator = excelFilePaths.iterator();
     }
-
 
 
     @Override
