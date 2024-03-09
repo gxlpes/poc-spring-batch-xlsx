@@ -19,8 +19,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -40,35 +42,33 @@ public class EmployeeController {
     }
 
     @PostMapping("/start-job")
-    public String startJob(@RequestParam("file") MultipartFile file) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException, IOException {
+    public String startJob(@RequestParam("files") MultipartFile[] files) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException, IOException {
         LOGGER.info("Starting job");
 
         try {
-            // Create a temporary directory if it doesn't exist
-            File tempDir = new File(System.getProperty("java.io.tmpdir"), "batch_upload_temp");
-            if (!tempDir.exists()) {
-                tempDir.mkdirs();
+            List<String> filePaths = new ArrayList<>();
+            for (MultipartFile file : files) {
+                File tempDir = new File(System.getProperty("java.io.tmpdir"), "batch_upload_temp");
+                if (!tempDir.exists()) {
+                    tempDir.mkdirs();
+                }
+
+                Path tempFile = Files.createTempFile(tempDir.toPath(), "temp_", file.getOriginalFilename());
+                file.transferTo(tempFile);
+
+                System.out.println(tempFile);
+                filePaths.add(tempFile.toString());
             }
 
-            // Save the file to the temporary directory
-            Path tempFile = Files.createTempFile(tempDir.toPath(), "temp_", file.getOriginalFilename());
-            file.transferTo(tempFile);
-
-            System.out.println(tempFile);
-
-            JobParameters params = new JobParametersBuilder()
+            JobParameters jobParameters = new JobParametersBuilder()
                     .addString("jobId", String.format("%.3f", System.currentTimeMillis() / 1000.0))
                     .addDate("currentTime", new Date())
-                    .addString("excelPath", tempFile.toString())
+                    .addString("excelPaths", String.join(",", filePaths))
                     .toJobParameters();
 
-            jobLauncher.run(job, params);
+            jobLauncher.run(job, jobParameters);
 
             LOGGER.info("Stopping job");
-
-//            // Optionally, delete the temporary file after the job is completed
-//            Files.deleteIfExists(tempFile);
-
             return "starting the job";
         } catch (Exception e) {
             LOGGER.error("Error starting job", e);
