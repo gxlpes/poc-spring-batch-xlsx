@@ -28,7 +28,6 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
 
             LOGGER.info("==========JOB FINISHED=======");
             LOGGER.info("JobId      : {}",jobId);
-            LOGGER.info("excel Path      : {}",excelFilePath);
             LOGGER.info("Start Date: {}", start);
             LOGGER.info("End Date: {}", end);
             LOGGER.info("==============================");

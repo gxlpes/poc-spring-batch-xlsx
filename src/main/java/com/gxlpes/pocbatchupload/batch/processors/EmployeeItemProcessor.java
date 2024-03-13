@@ -53,7 +53,6 @@ public class EmployeeItemProcessor extends AbstractExcelPoi<Employee> implements
 
     @Override
     public void beforeStep(StepExecution stepExecution) {
-        /* Nothing to do before */
     }
 
     @Override

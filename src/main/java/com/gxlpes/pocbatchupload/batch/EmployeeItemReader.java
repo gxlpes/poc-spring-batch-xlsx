@@ -48,7 +48,6 @@ public class EmployeeItemReader extends AbstractExcelPoi<Employee> implements It
     public void beforeStep(StepExecution stepExecution) {
         ExecutionContext jobContext = stepExecution.getJobExecution().getExecutionContext();
         String excelPaths = stepExecution.getJobExecution().getJobParameters().getString("excelPaths");
-        System.out.println("testing ###### " + excelPaths);
         assert excelPaths != null;
         List<String> excelFilePaths = Arrays.asList(excelPaths.split(","));
         excelFilePathsIterator = excelFilePaths.iterator();
